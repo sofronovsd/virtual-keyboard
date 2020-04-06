@@ -1,0 +1,44 @@
+.keyboard {
+  width: 100%;
+
+  &__keys {
+    text-align: start;
+  }
+
+  &__key {
+    height: $key-height;
+    width: $key-width;
+    margin: 3px;
+    border-radius: 4px;
+    border: none;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 1.05rem;
+    outline: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    &_medium {
+      width: $key-width-medium;
+    }
+
+    &_wide {
+      width: $key-width-wide;
+    }
+
+    &_extra-wide {
+      width: $key-width-extra-wide;
+    }
+
+    &:hover {
+      //opacity: 0.5;
+    }
+
+    &_active {
+      opacity: 1;
+      background: $color-background-secondary;
+    }
+  }
+}
