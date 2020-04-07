@@ -417,6 +417,9 @@ window.addEventListener('DOMContentLoaded', () => {
       + 'Для ввода необходимо сфокусироваться на поле ввода. '
       + 'Для переключения языка комбинация: левыe alt + shift';
   document.body.appendChild(text);
+  const textSecond = document.createElement('strong');
+  textSecond.innerHTML = 'Для работы с клавиатурой поставьте курсор в поле ввода.';
+  document.body.appendChild(textSecond);
   textarea = new Textarea();
   keyboard = new Keyboard();
 });
