@@ -1,16 +1,119 @@
 let textarea;
 let keyboard;
 
-function imitateMouseDown(keyElement) {
+function onKeyDown(keyElement) {
   if (keyElement !== undefined) {
     keyElement.dispatchEvent(new Event('mousedown'));
   }
 }
 
-function imitateMouseUp(keyElement) {
+function onSpecialKeyDown(keyContent) {
+  if (keyContent !== undefined) {
+    const keys = [...keyboard.elements.keys];
+    const keyElement = keys.find((element) => element.textContent === keyContent);
+    keyElement.dispatchEvent(new Event('mousedown'));
+  }
+}
+
+function onKeyUp(keyElement) {
   if (keyElement !== undefined) {
     keyElement.dispatchEvent(new Event('mouseup'));
   }
+}
+
+function onSpecialKeyUp(keyContent) {
+  if (keyContent !== undefined) {
+    const keys = [...keyboard.elements.keys];
+    const keyElement = keys.find((element) => element.textContent === keyContent);
+    keyElement.dispatchEvent(new Event('mouseup'));
+  }
+}
+
+function handleAltShift() {
+  let { locale } = keyboard.properties;
+  if (locale === 'rus') {
+    locale = 'en';
+  } else {
+    locale = 'rus';
+  }
+  window.localStorage.setItem('keyboardLocale', locale);
+  document.body.removeChild(keyboard.elements.main);
+  keyboard.init();
+}
+
+function handleBackspaceClick() {
+  const index = textarea.getCaret();
+  let value = textarea.getValue();
+  value = value.substring(0, index - 1) + value.substring(index, value.length);
+  textarea.setValue(value);
+}
+
+function handleEnterClick() {
+  const value = textarea.getValue();
+  textarea.setValue(`${value}\n`);
+}
+
+function handleSpaceClick() {
+  const value = textarea.getValue();
+  textarea.setValue(`${value} `);
+}
+
+function handleDeleteClick() {
+  const index = textarea.getCaret();
+  let value = textarea.getValue();
+  value = value.substring(0, index) + value.substring(index + 1, value.length);
+  textarea.setValue(value);
+}
+
+function handleKeyMouseDown(event) {
+  const { target } = event;
+  target.classList.add('keyboard__key_active');
+}
+
+function handleKeyMouseUp(event) {
+  const { target } = event;
+  target.classList.remove('keyboard__key_active');
+}
+
+function handleKeyMouseOut(event) {
+  const { target } = event;
+  target.classList.remove('keyboard__key_active');
+}
+
+function isCommonKey(key) {
+  return !(key.classList.contains('keyboard__key_medium')
+      || key.classList.contains('keyboard__key_wide')
+      || key.classList.contains('keyboard__key_extra-wide'));
+}
+
+function handleKeyClick(event) {
+  const { target } = event;
+  let value = textarea.getValue();
+  value += keyboard.getCapsLock()
+    ? target.textContent.toUpperCase() : target.textContent.toLowerCase();
+  textarea.setValue(value);
+}
+
+function handleCapslockClick() {
+  const capslock = keyboard.getCapsLock();
+  keyboard.setCapsLock(!capslock);
+
+  const keys = keyboard.getKeys();
+
+  keys.forEach((key) => {
+    if (isCommonKey(key)) {
+      key.textContent = keyboard.getCapsLock()
+        ? key.textContent.toUpperCase() : key.textContent.toLowerCase();
+    }
+  });
+}
+
+function handleShiftMouseDown() {
+  keyboard.setCapsLock(true);
+}
+
+function handleShiftMouseUp() {
+  keyboard.setCapsLock(false);
 }
 
 class Textarea {
@@ -30,69 +133,48 @@ class Textarea {
       const { code } = event;
       const keys = [...keyboard.elements.keys];
       let isCode = false;
+      const keyMap = keyboard.getKeyMap();
 
       switch (code) {
         case 'Space': {
-          const keyElement = keys.find((element) => element.textContent === 'SPACE');
-
-          imitateMouseDown(keyElement);
+          onSpecialKeyDown(keyMap.get('Space'));
           isCode = true;
           break;
         }
         case 'Enter': {
-          const keyElement = keys.find((element) => element.textContent === 'ENTER');
-
-          imitateMouseDown(keyElement);
+          onSpecialKeyDown(keyMap.get('Enter'));
           isCode = true;
           break;
         }
         case 'Backspace': {
-          const keyElement = keys.find((element) => element.textContent === 'BACKSPACE');
-
-          imitateMouseDown(keyElement);
+          onSpecialKeyDown(keyMap.get('Backspace'));
           isCode = true;
           break;
         }
         case 'CapsLock': {
-          const keyElement = keys.find((element) => element.textContent === 'CAPSLOCK');
-
-          imitateMouseDown(keyElement);
-          keyboard.toggleCapsLock();
+          onSpecialKeyDown(keyMap.get('CapsLock'));
+          handleCapslockClick();
           isCode = true;
           break;
         }
         case 'Delete': {
-          const keyElement = keys.find((element) => element.textContent === 'DEL');
-
-          imitateMouseDown(keyElement);
+          onSpecialKeyDown(keyMap.get('Delete'));
           isCode = true;
           break;
         }
         case 'AltLeft': {
-          const keyElement = keys.find((element) => element.textContent === 'ALT');
-
+          onSpecialKeyDown(keyMap.get('AltLeft'));
           isAlt = true;
-          imitateMouseDown(keyElement);
           isCode = true;
           break;
         }
         case 'ShiftLeft': {
-          const keyElement = keys.find((element) => element.textContent === 'SHIFT');
-
-          imitateMouseDown(keyElement);
+          onSpecialKeyDown(keyMap.get('ShiftLeft'));
           if (isAlt) {
-            let { locale } = keyboard.properties;
-            if (locale === 'rus') {
-              locale = 'en';
-            } else {
-              locale = 'rus';
-            }
-            window.localStorage.setItem('keyboardLocale', locale);
-            document.body.removeChild(keyboard.elements.main);
-            keyboard.init();
-
+            handleAltShift();
             isAlt = false;
           }
+
           isCode = true;
           break;
         }
@@ -103,8 +185,7 @@ class Textarea {
       if (!isCode) {
         const { key } = event;
         const keyElement = keys.find((element) => element.textContent === key);
-
-        imitateMouseDown(keyElement);
+        onKeyDown(keyElement);
       }
     });
 
@@ -112,55 +193,42 @@ class Textarea {
       const { code } = event;
       const keys = [...keyboard.elements.keys];
       let isCode = false;
+      const keyMap = keyboard.getKeyMap();
 
       switch (code) {
         case 'Space': {
-          const keyElement = keys.find((element) => element.textContent === 'SPACE');
-
-          imitateMouseUp(keyElement);
+          onSpecialKeyUp(keyMap.get('Space'));
           isCode = true;
           break;
         }
         case 'Enter': {
-          const keyElement = keys.find((element) => element.textContent === 'ENTER');
-
-          imitateMouseUp(keyElement);
+          onSpecialKeyUp(keyMap.get('Enter'));
           isCode = true;
           break;
         }
         case 'Backspace': {
-          const keyElement = keys.find((element) => element.textContent === 'BACKSPACE');
-
-          imitateMouseUp(keyElement);
+          onSpecialKeyUp(keyMap.get('Backspace'));
           isCode = true;
           break;
         }
         case 'CapsLock': {
-          const keyElement = keys.find((element) => element.textContent === 'CAPSLOCK');
-
-          imitateMouseUp(keyElement);
+          onSpecialKeyUp(keyMap.get('CapsLock'));
           isCode = true;
           break;
         }
         case 'Delete': {
-          const keyElement = keys.find((element) => element.textContent === 'DEL');
-
-          imitateMouseUp(keyElement);
+          onSpecialKeyUp(keyMap.get('Delete'));
           isCode = true;
           break;
         }
         case 'AltLeft': {
-          const keyElement = keys.find((element) => element.textContent === 'ALT');
-
+          onSpecialKeyUp(keyMap.get('AltLeft'));
           isAlt = false;
-          imitateMouseUp(keyElement);
           isCode = true;
           break;
         }
         case 'ShiftLeft': {
-          const keyElement = keys.find((element) => element.textContent === 'SHIFT');
-
-          imitateMouseUp(keyElement);
+          onSpecialKeyUp(keyMap.get('ShiftLeft'));
           isCode = true;
           break;
         }
@@ -171,8 +239,7 @@ class Textarea {
       if (!isCode) {
         const { key } = event;
         const keyElement = keys.find((element) => element.textContent === key);
-
-        imitateMouseUp(keyElement);
+        onKeyUp(keyElement);
       }
     });
 
@@ -211,7 +278,10 @@ class Keyboard {
     this.properties = {
       capsLock: false,
       locale: null,
+      keyMap: null,
     };
+
+    this.initKeyMap();
 
     const keyboardLocale = window.localStorage.getItem('keyboardLocale');
     this.properties.locale = keyboardLocale !== null ? keyboardLocale : 'rus';
@@ -227,6 +297,34 @@ class Keyboard {
 
     this.elements.main.appendChild(this.elements.keysContainer);
     document.body.appendChild(this.elements.main);
+  }
+
+  initKeyMap() {
+    const keyMap = new Map();
+    keyMap.set('Space', 'SPACE');
+    keyMap.set('Enter', 'ENTER');
+    keyMap.set('Backspace', 'BACKSPACE');
+    keyMap.set('CapsLock', 'CAPSLOCK');
+    keyMap.set('Delete', 'DEL');
+    keyMap.set('AltLeft', 'ALT');
+    keyMap.set('ShiftLeft', 'SHIFT');
+    this.properties.keyMap = keyMap;
+  }
+
+  getKeyMap() {
+    return this.properties.keyMap;
+  }
+
+  getKeys() {
+    return this.elements.keys;
+  }
+
+  getCapsLock() {
+    return this.properties.capsLock;
+  }
+
+  setCapsLock(capslock) {
+    this.properties.capsLock = capslock;
   }
 
   createKeys() {
@@ -255,10 +353,6 @@ class Keyboard {
 
     keyLayout.forEach((key) => {
       const keyElement = document.createElement('button');
-      const insertLineBreak = ['backspace', { rus: 'ъ', en: ']' }, {
-        rus: 'э',
-        en: '\'',
-      }, 'enter', 'space'].indexOf(key) !== -1;
 
       keyElement.setAttribute('type', 'button');
       keyElement.classList.add('keyboard__key');
@@ -268,13 +362,7 @@ class Keyboard {
           keyElement.classList.add('keyboard__key_wide');
           keyElement.textContent = key.toUpperCase();
 
-          keyElement.addEventListener('click', () => {
-            const index = textarea.getCaret();
-            let value = textarea.getValue();
-            value = value.substring(0, index - 1) + value.substring(index, value.length);
-            textarea.setValue(value);
-          });
-
+          keyElement.addEventListener('click', handleBackspaceClick);
           break;
         }
 
@@ -282,10 +370,7 @@ class Keyboard {
           keyElement.classList.add('keyboard__key_wide');
           keyElement.textContent = key.toUpperCase();
 
-          keyElement.addEventListener('click', () => {
-            this.toggleCapsLock();
-          });
-
+          keyElement.addEventListener('click', handleCapslockClick);
           break;
         }
 
@@ -293,12 +378,7 @@ class Keyboard {
           keyElement.classList.add('keyboard__key_wide');
           keyElement.textContent = key.toUpperCase();
 
-          keyElement.addEventListener('click', () => {
-            let value = textarea.getValue();
-            value += '\n';
-            textarea.setValue(value);
-          });
-
+          keyElement.addEventListener('click', handleEnterClick);
           break;
         }
 
@@ -306,12 +386,7 @@ class Keyboard {
           keyElement.classList.add('keyboard__key_extra-wide');
           keyElement.textContent = key.toUpperCase();
 
-          keyElement.addEventListener('click', () => {
-            let value = textarea.getValue();
-            value += ' ';
-            textarea.setValue(value);
-          });
-
+          keyElement.addEventListener('click', handleSpaceClick);
           break;
         }
 
@@ -319,13 +394,7 @@ class Keyboard {
           keyElement.classList.add('keyboard__key_medium');
           keyElement.textContent = key.toUpperCase();
 
-          keyElement.addEventListener('click', () => {
-            const index = textarea.getCaret();
-            let value = textarea.getValue();
-            value = value.substring(0, index) + value.substring(index + 1, value.length);
-            textarea.setValue(value);
-          });
-
+          keyElement.addEventListener('click', handleDeleteClick);
           break;
         }
 
@@ -333,25 +402,14 @@ class Keyboard {
           keyElement.classList.add('keyboard__key_medium');
           keyElement.textContent = key.toUpperCase();
 
-          keyElement.addEventListener('mousedown', () => {
-            this.properties.capsLock = true;
-          });
-
-          keyElement.addEventListener('mouseup', () => {
-            this.properties.capsLock = false;
-          });
-
+          keyElement.addEventListener('mousedown', handleShiftMouseDown);
+          keyElement.addEventListener('mouseup', handleShiftMouseUp);
           break;
         }
 
         case 'alt': {
           keyElement.classList.add('keyboard__key_medium');
           keyElement.textContent = key.toUpperCase();
-
-          keyElement.addEventListener('click', () => {
-
-          });
-
           break;
         }
 
@@ -362,52 +420,18 @@ class Keyboard {
             keyElement.textContent = key.toLowerCase();
           }
 
-          keyElement.addEventListener('click', () => {
-            let value = textarea.getValue();
-            value += this.properties.capsLock
-              ? keyElement.textContent.toUpperCase() : keyElement.textContent.toLowerCase();
-            textarea.setValue(value);
-          });
+          keyElement.addEventListener('click', handleKeyClick);
         }
       }
 
-      keyElement.addEventListener('mousedown', (event) => {
-        const { target } = event;
-        target.classList.add('keyboard__key_active');
-      });
-
-      keyElement.addEventListener('mouseup', (event) => {
-        const { target } = event;
-        target.classList.remove('keyboard__key_active');
-      });
-
-      keyElement.addEventListener('mouseout', (event) => {
-        const { target } = event;
-        target.classList.remove('keyboard__key_active');
-      });
+      keyElement.addEventListener('mousedown', handleKeyMouseDown);
+      keyElement.addEventListener('mouseup', handleKeyMouseUp);
+      keyElement.addEventListener('mouseout', handleKeyMouseOut);
 
       fragment.appendChild(keyElement);
-
-      if (insertLineBreak) {
-        fragment.appendChild(document.createElement('br'));
-      }
     });
 
     return fragment;
-  }
-
-  toggleCapsLock() {
-    this.properties.capsLock = !this.properties.capsLock;
-
-    this.elements.keys.forEach((key) => {
-      // if isCommonKey
-      if (!(key.classList.contains('keyboard__key_medium')
-                || key.classList.contains('keyboard__key_wide')
-                || key.classList.contains('keyboard__key_extra-wide'))) {
-        key.textContent = this.properties.capsLock
-          ? key.textContent.toUpperCase() : key.textContent.toLowerCase();
-      }
-    });
   }
 }
 

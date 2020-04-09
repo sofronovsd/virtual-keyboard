@@ -41,7 +41,6 @@ body {
   width: 83%;
 }
 .keyboard__key_active {
-  opacity: 1;
   background: #5A6B80;
 }
 
